@@ -7,6 +7,10 @@ from dotenv import load_dotenv
 # Initialize load-env for token accessing
 load_dotenv()
 
+# Store important values from .env in variables
+BOT_TOKEN = os.getenv('TOKEN')
+API_KEY = os.getenv('KEY')
+
 # Add instance of discord client with intents
 intents = discord.Intents.default()
 intents.message_content = True
@@ -28,4 +32,4 @@ async def on_message(message):
         await message.channel.send('hi')
 
 # Run the bot
-client.run(os.getenv('TOKEN'))
+client.run(BOT_TOKEN)
