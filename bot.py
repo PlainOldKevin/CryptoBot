@@ -77,7 +77,7 @@ async def price(ctx, symbol: str):
             price = coin['quote']['USD']['price']
 
             # Output the data 
-            await ctx.send(f"The current price of {symbol.upper()} is ${price:.2f}")
+            await ctx.send(f"The current price of {symbol.upper()} is ${price:,.2f}")
         else:
             # Tell user their entry is not in the top 50 cryptos
             await ctx.send(f"{symbol.upper()} is not in the top 50 cryptocurrencies by market cap.")
