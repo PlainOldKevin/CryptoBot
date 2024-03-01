@@ -29,6 +29,7 @@ async def on_ready():
 async def hello(ctx):
     await ctx.send("hi")
 
+# Function to automatically fetch the price of any cryptocurrency in the top 50 by market cap
 @bot.command()
 async def price(ctx, symbol: str):
     # Fetch cryptocurrencies (sorted by market cap) with url below
@@ -71,11 +72,14 @@ async def price(ctx, symbol: str):
             # Get the response data and parse as JSON all on the same line
             price_response_data = requests.get(price_url, params=price_parameters, headers=headers).json()
 
-            
+            # Get the specific coin (by symbol) and price of that coin
             coin = price_response_data['data'][symbol.upper()]
             price = coin['quote']['USD']['price']
+
+            # Output the data 
             await ctx.send(f"The current price of {symbol.upper()} is ${price:.2f}")
         else:
+            # Tell user their entry is not in the top 50 cryptos
             await ctx.send(f"{symbol.upper()} is not in the top 50 cryptocurrencies by market cap.")
     else:
         # HTTP request is not successful, display error message
