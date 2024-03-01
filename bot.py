@@ -85,5 +85,48 @@ async def price(ctx, symbol: str):
         # HTTP request is not successful, display error message
         await ctx.send(f"There was an error fetching the cryptocurrency list. Error Code: {response.status_code}")
 
+# Function to display top 5 cryptocurrencies by market cap (include symbol, name, price as well)
+@bot.command()
+async def top5(ctx):
+    # Fetch cryptocurrencies (sorted by market cap) with url below
+    url = 'https://pro-api.coinmarketcap.com/v1/cryptocurrency/listings/latest'
+    
+    # Headers for CoinMarketCap API authentication
+    headers = { 
+        'X-CMC_PRO_API_KEY': API_KEY,
+        'Accepts': 'application/json'
+    }
+
+    # Only access the top 5 of those listings, and return their prices in USD
+    parameters = {
+        'start': '1',
+        'limit': '5', 
+        'convert': 'USD'
+    }
+
+    # Send and HTTP request for the data
+    response = requests.get(url, params=parameters, headers=headers)
+
+    # HTTP request is successful, run following code
+    if response.status_code == 200:
+        # Parse the response as JSON data
+        data = response.json()
+        # Create a list of the all the data to use later in the function
+        top5_coins = data['data']
+
+        # Create header message before sending cryptos
+        header = "**Top 5 Cryptocurrencies by Market Cap:**\n"
+
+        # Append each line with coin rank (by mkt cap), name, symbol, price, and market cap
+        for coin in top5_coins:
+            header += f"""**{coin['cmc_rank']}.** {coin['name']} **Symbol:** {coin['symbol']} **Price:** ${coin['quote']['USD']['price']:.2f} **Market Cap:** ${coin['quote']['USD']['market_cap']:.2f}\n"""
+            
+        # Send message
+        await ctx.send(header)
+    
+    # HTTP request is not successful, display error message
+    else:    
+        await ctx.send(f"There was an error fetching the cryptocurrency list. Error Code: {response.status_code}")
+
 # Run the bot
 bot.run(BOT_TOKEN)
