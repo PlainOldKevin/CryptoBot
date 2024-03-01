@@ -114,15 +114,30 @@ async def top5(ctx):
         # Create a list of the all the data to use later in the function
         top5_coins = data['data']
 
-        # Create header message before sending cryptos
-        header = "**Top 5 Cryptocurrencies by Market Cap:**\n"
+        # Header
+        header = "**Top 5 Cryptocurrencies by Market Cap**\n"
 
-        # Append each line with coin rank (by mkt cap), name, symbol, price, and market cap
+        # Start of the table
+        table = "```\nRank  Name          Symbol  Price        Market Cap\n"
+
+        # Go through and sort data by type
         for coin in top5_coins:
-            header += f"""**{coin['cmc_rank']}.** {coin['name']} **Symbol:** {coin['symbol']} **Price:** ${coin['quote']['USD']['price']:,.2f} **Market Cap:** ${coin['quote']['USD']['market_cap']:,.2f}\n"""
+
+            # Adjust spacing to align the columns, depending on the length of each string
+            rank = str(coin['cmc_rank']).ljust(3)
+            name = coin['name'].ljust(13)  
+            symbol = coin['symbol'].ljust(7)
+            price = f"${coin['quote']['USD']['price']:,.2f}".ljust(12)
+            market_cap = f"${coin['quote']['USD']['market_cap']:,.2f}"
+
+            # Append each coin's data as a new row in the table
+            table += f"{rank}   {name} {symbol} {price} {market_cap}\n"
+        # Append ``` to end the code block
+        table += "```"
             
         # Send message
         await ctx.send(header)
+        await ctx.send(table)
     
     # HTTP request is not successful, display error message
     else:    
