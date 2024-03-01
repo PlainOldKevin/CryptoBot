@@ -119,7 +119,7 @@ async def top5(ctx):
 
         # Append each line with coin rank (by mkt cap), name, symbol, price, and market cap
         for coin in top5_coins:
-            header += f"""**{coin['cmc_rank']}.** {coin['name']} **Symbol:** {coin['symbol']} **Price:** ${coin['quote']['USD']['price']:.2f} **Market Cap:** ${coin['quote']['USD']['market_cap']:.2f}\n"""
+            header += f"""**{coin['cmc_rank']}.** {coin['name']} **Symbol:** {coin['symbol']} **Price:** ${coin['quote']['USD']['price']:,.2f} **Market Cap:** ${coin['quote']['USD']['market_cap']:,.2f}\n"""
             
         # Send message
         await ctx.send(header)
