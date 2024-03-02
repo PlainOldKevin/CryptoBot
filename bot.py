@@ -4,6 +4,7 @@ from discord.ext import commands
 import requests
 import os
 from dotenv import load_dotenv
+from tabulate import tabulate
 
 # Initialize load-env for token accessing
 load_dotenv()
@@ -117,27 +118,26 @@ async def top5(ctx):
         # Header
         header = "**Top 5 Cryptocurrencies by Market Cap**\n"
 
-        # Start of the table
-        table = "```\nRank  Name          Symbol  Price        Market Cap\n"
+        # Create a table for every coin in the top 5 using comprehension (for tabulate purposes)
+        table_data = [ # Each coin's rank (by mkt cap), name, symbol, price (USD), and market cap (USD) added to table
+            {
+                'Rank': coin['cmc_rank'],
+                'Name': coin['name'],
+                'Symbol': coin['symbol'],
+                'Price': f"${coin['quote']['USD']['price']:,.2f}",
+                'Market Cap': f"${coin['quote']['USD']['market_cap']:,.0f}"
+            }
+            for coin in top5_coins # Said comprehension
+        ]
 
-        # Go through and sort data by type
-        for coin in top5_coins:
-
-            # Adjust spacing to align the columns, depending on the length of each string
-            rank = str(coin['cmc_rank']).ljust(3)
-            name = coin['name'].ljust(13)  
-            symbol = coin['symbol'].ljust(7)
-            price = f"${coin['quote']['USD']['price']:,.2f}".ljust(12)
-            market_cap = f"${coin['quote']['USD']['market_cap']:,.2f}"
-
-            # Append each coin's data as a new row in the table
-            table += f"{rank}   {name} {symbol} {price} {market_cap}\n"
-        # Append ``` to end the code block
-        table += "```"
+        # Specify column alignment for first column (hard-code for a bug with left-aligning 'Rank' values)
+        column_alignments = ('left',)
+        # Create the table using tabulate
+        table = tabulate(table_data, headers='keys', tablefmt='plain', stralign='left', colalign=column_alignments)
             
         # Send message
         await ctx.send(header)
-        await ctx.send(table)
+        await ctx.send(f"```\n{table}\n```")
     
     # HTTP request is not successful, display error message
     else:    
