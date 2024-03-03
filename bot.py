@@ -136,8 +136,7 @@ async def top5(ctx):
         table = tabulate(table_data, headers='keys', tablefmt='plain', stralign='left', colalign=column_alignments)
             
         # Send message
-        await ctx.send(header)
-        await ctx.send(f"```\n{table}\n```")
+        await ctx.send(f"{header}```\n{table}\n```")
     
     # HTTP request is not successful, display error message
     else:    
