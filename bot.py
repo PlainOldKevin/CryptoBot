@@ -129,6 +129,8 @@ async def top5(ctx):
 
         # Set a professional footer to the message
         embed.set_footer(text="Data retrieved from CoinMarketCap")
+
+        # Send the message
         await ctx.send(embed=embed)
     
     # HTTP request is not successful, display error message
