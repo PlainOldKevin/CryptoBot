@@ -121,7 +121,7 @@ async def top5(ctx):
         # Iterate through every value in the JSON data (each coin's data)
         for coin in data['data']:
             # Add name and symbol to one field; price and market cap in another
-            name_symbol = f"{coin['name']} ({coin['symbol']})"
+            name_symbol = f"{coin['cmc_rank']}. {coin['name']} ({coin['symbol']})"
             price_market_cap = f"Price: ${coin['quote']['USD']['price']:,.2f}\nMarket Cap: ${coin['quote']['USD']['market_cap']:,.0f}"
             
             # Each cryptocurrency is added as a new field
