@@ -4,7 +4,6 @@ from discord.ext import commands
 import requests
 import os
 from dotenv import load_dotenv
-from tabulate import tabulate
 
 # Initialize load-env for token accessing
 load_dotenv()
@@ -141,7 +140,7 @@ async def embed_test(ctx):
     embed = discord.Embed(
         title="Bitcoin (BTC)",
         description="Here's some info about Bitcoin\n(The below values are placeholders)",
-        color=discord.Color.blue()
+        color=discord.Color.dark_purple()
     )
 
     # Adding various fields to the embed
