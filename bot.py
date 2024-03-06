@@ -112,31 +112,25 @@ async def top5(ctx):
     if response.status_code == 200:
         # Parse the response as JSON data
         data = response.json()
-        # Create a list of the all the data to use later in the function
-        top5_coins = data['data']
 
-        # Header
-        header = "**Top 5 Cryptocurrencies by Market Cap**\n"
+        # Create the embed to hold the message
+        embed = discord.Embed(
+            title="Top 5 Cryptocurrencies by Market Cap",
+            color=discord.Color.dark_purple()
+        )
 
-        # Create a table for every coin in the top 5 using comprehension (for tabulate purposes)
-        table_data = [ # Each coin's rank (by mkt cap), name, symbol, price (USD), and market cap (USD) added to table
-            {
-                'Rank': coin['cmc_rank'],
-                'Name': coin['name'],
-                'Symbol': coin['symbol'],
-                'Price': f"${coin['quote']['USD']['price']:,.2f}",
-                'Market Cap': f"${coin['quote']['USD']['market_cap']:,.0f}"
-            }
-            for coin in top5_coins # Said comprehension
-        ]
-
-        # Specify column alignment for first column (hard-code for a bug with left-aligning 'Rank' values)
-        column_alignments = ('left',)
-        # Create the table using tabulate
-        table = tabulate(table_data, headers='keys', tablefmt='plain', stralign='left', colalign=column_alignments)
+        # Iterate through every value in the JSON data (each coin's data)
+        for coin in data['data']:
+            # Add name and symbol to one field; price and market cap in another
+            name_symbol = f"{coin['name']} ({coin['symbol']})"
+            price_market_cap = f"Price: ${coin['quote']['USD']['price']:,.2f}\nMarket Cap: ${coin['quote']['USD']['market_cap']:,.0f}"
             
-        # Send message
-        await ctx.send(f"{header}```\n{table}\n```")
+            # Each cryptocurrency is added as a new field
+            embed.add_field(name=name_symbol, value=price_market_cap, inline=False)
+
+        # Set a professional footer to the message
+        embed.set_footer(text="Data retrieved from CoinMarketCap")
+        await ctx.send(embed=embed)
     
     # HTTP request is not successful, display error message
     else:    
@@ -147,7 +141,7 @@ async def embed_test(ctx):
     embed = discord.Embed(
         title="Bitcoin (BTC)",
         description="Here's some info about Bitcoin\n(The below values are placeholders)",
-        color=discord.Color.blue()  # Sets the color of the embed
+        color=discord.Color.blue()
     )
 
     # Adding various fields to the embed
