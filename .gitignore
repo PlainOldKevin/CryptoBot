@@ -9,4 +9,4 @@ bin/
 out/
 .env
 Procfile
-requirements.txt
+venv/
