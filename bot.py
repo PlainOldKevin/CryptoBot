@@ -30,7 +30,7 @@ async def on_ready():
 async def hello(ctx):
     await ctx.send("hi")
 
-# Function to automatically fetch the price of any cryptocurrency in the top 50 by market cap
+# Function to automatically fetch the price of any cryptocurrency
 @bot.command()
 async def price(ctx, symbol: str):
     # Fetch cryptocurrencies with url below
@@ -42,7 +42,7 @@ async def price(ctx, symbol: str):
         'Accepts': 'application/json'
     }
 
-    # Only access the top 50 of those listings, and return their prices in USD
+    # Return their prices in USD
     parameters = { 
         'convert': 'USD',
         'symbol': symbol.upper(),

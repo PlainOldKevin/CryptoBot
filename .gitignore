@@ -8,3 +8,5 @@ bin/
 .DS_Store
 out/
 .env
+Procfile
+requirements.txt
