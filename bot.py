@@ -10,6 +10,7 @@ load_dotenv()
 
 # Store important values from .env in variables
 BOT_TOKEN = os.getenv('TOKEN')
+TEST_TOKEN = os.getenv('TEST_TOKEN')
 API_KEY = os.getenv('KEY')
 
 # Add instance of discord client with intents
@@ -32,8 +33,8 @@ async def hello(ctx):
 # Function to automatically fetch the price of any cryptocurrency in the top 50 by market cap
 @bot.command()
 async def price(ctx, symbol: str):
-    # Fetch cryptocurrencies (sorted by market cap) with url below
-    url = 'https://pro-api.coinmarketcap.com/v1/cryptocurrency/listings/latest'
+    # Fetch cryptocurrencies with url below
+    url = 'https://pro-api.coinmarketcap.com/v1/cryptocurrency/quotes/latest'
     
     # Headers for CoinMarketCap API authentication
     headers = { 
@@ -42,10 +43,9 @@ async def price(ctx, symbol: str):
     }
 
     # Only access the top 50 of those listings, and return their prices in USD
-    parameters = {
-        'start': '1',
-        'limit': '50', 
-        'convert': 'USD'
+    parameters = { 
+        'convert': 'USD',
+        'symbol': symbol.upper(),
     }
 
     # Send and HTTP request for the data
@@ -55,32 +55,26 @@ async def price(ctx, symbol: str):
     if response.status_code == 200:
         # Parse the response as JSON data
         data = response.json()
-        # Create a list of the top 50 cryptocurrency symbols (by mkt cap) using comprehension
-        top_50_symbols = [coin['symbol'] for coin in data['data']]
         
-        # Check if the requested coin is in the top 50
-        if symbol.upper() in top_50_symbols:
-            # Fetch and display the price of the coin
-            price_url = 'https://pro-api.coinmarketcap.com/v1/cryptocurrency/quotes/latest'
+        # Create the embed to hold the message
+        embed = discord.Embed(
+            title=f"{data['data'][symbol.upper()]['name']}",
+            color=discord.Color.dark_purple()
+        )
 
-            # Define params to query the url with
-            price_parameters = {
-                'symbol': symbol.upper(),
-                'convert': 'USD'
-            }
-            
-            # Get the response data and parse as JSON all on the same line
-            price_response_data = requests.get(price_url, params=price_parameters, headers=headers).json()
+        # Find the price of the specified crypto and assign it to memory, next add this price to an f-string to add to embed field
+        price = data['data'][symbol.upper()]['quote']['USD']['price']
+        price_value_string = f"${price:,.2f}"
 
-            # Get the specific coin (by symbol) and price of that coin
-            coin = price_response_data['data'][symbol.upper()]
-            price = coin['quote']['USD']['price']
+        # Add it to the embed
+        embed.add_field(name="Price (USD):", value=price_value_string, inline=False)
 
-            # Output the data 
-            await ctx.send(f"The current price of {symbol.upper()} is ${price:,.2f}")
-        else:
-            # Tell user their entry is not in the top 50 cryptos
-            await ctx.send(f"{symbol.upper()} is not in the top 50 cryptocurrencies by market cap.")
+        # Set a professional footer to the message
+        embed.set_footer(text="Data retrieved from CoinMarketCap")
+
+        # Send the message
+        await ctx.send(embed=embed)
+        
     else:
         # HTTP request is not successful, display error message
         await ctx.send(f"There was an error fetching the cryptocurrency list. Error Code: {response.status_code}")
