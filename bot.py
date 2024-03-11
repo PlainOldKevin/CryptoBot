@@ -131,6 +131,7 @@ async def top5(ctx):
     else:    
         await ctx.send(f"There was an error fetching the cryptocurrency list. Error Code: {response.status_code}")
 
+# Test method for preview of embeded messages
 @bot.command()
 async def embed_test(ctx):
     embed = discord.Embed(
