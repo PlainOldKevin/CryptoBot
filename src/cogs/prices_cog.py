@@ -7,11 +7,10 @@ import os
 # Create class
 class PricesCog(commands.Cog):
 
-    # Init method
+    # Init method (set important variables)
     def __init__(self, bot):
-        self.bot = bot
+        self.bot = bot 
         self.api_key = os.getenv('KEY')
-        print("Initializing PricesCog")
 
     # Function to automatically fetch the price of any cryptocurrency
     @commands.command()

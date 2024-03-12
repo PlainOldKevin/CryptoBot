@@ -30,6 +30,7 @@ async def on_ready():
 async def hello(ctx):
     await ctx.send("hi")
 
+# Main function to handle bot's cog loading and running
 async def main():
     # List of all the cog files (to be loaded into the bot below)
     cogs_list = ['prices_cog']
@@ -45,5 +46,6 @@ async def main():
 
     await bot.start(BOT_TOKEN)
 
+# Run the asynchronous main method (containing bot initialization)
 if __name__ == '__main__':
     asyncio.run(main())
