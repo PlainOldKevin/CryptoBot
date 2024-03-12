@@ -1,8 +1,8 @@
 # Imports
 import discord
 from discord.ext import commands
-import requests
 import os
+import asyncio
 from dotenv import load_dotenv
 
 # Initialize load-env for token accessing
@@ -20,7 +20,7 @@ intents.message_content = True
 # Initialiaze bot
 bot = commands.Bot(command_prefix='!', intents=intents)
 
-# Add on ready instance (when client is ready for use)
+# Run function when bot is initialized
 @bot.event
 async def on_ready():
     print("We have logged in as {0.user}".format(bot))
@@ -30,124 +30,20 @@ async def on_ready():
 async def hello(ctx):
     await ctx.send("hi")
 
-# Function to automatically fetch the price of any cryptocurrency
-@bot.command()
-async def price(ctx, symbol: str):
-    # Fetch cryptocurrencies with url below
-    url = 'https://pro-api.coinmarketcap.com/v1/cryptocurrency/quotes/latest'
-    
-    # Headers for CoinMarketCap API authentication
-    headers = { 
-        'X-CMC_PRO_API_KEY': API_KEY,
-        'Accepts': 'application/json'
-    }
+async def main():
+    # List of all the cog files (to be loaded into the bot below)
+    cogs_list = ['prices_cog']
 
-    # Return their prices in USD
-    parameters = { 
-        'convert': 'USD',
-        'symbol': symbol.upper(),
-    }
+    # Load the extensions into the bot
+    for cog in cogs_list:
+        try:
+            await bot.load_extension(cog)
+            print(f"Loaded cog: {cog}")
+        except Exception as e:
+            print(f"Failed to load cog: {cog}")
+            print(f"[ERROR] {e}")
 
-    # Send and HTTP request for the data
-    response = requests.get(url, params=parameters, headers=headers)
+    await bot.start(TEST_TOKEN)
 
-    # HTTP request is successful, run following code
-    if response.status_code == 200:
-        # Parse the response as JSON data
-        data = response.json()
-        
-        # Create the embed to hold the message
-        embed = discord.Embed(
-            title=f"{data['data'][symbol.upper()]['name']}",
-            color=discord.Color.dark_purple()
-        )
-
-        # Find the price of the specified crypto and assign it to memory, next add this price to an f-string to add to embed field
-        price = data['data'][symbol.upper()]['quote']['USD']['price']
-        price_value_string = f"${price:,.2f}"
-
-        # Add it to the embed
-        embed.add_field(name="Price (USD):", value=price_value_string, inline=False)
-
-        # Set a professional footer to the message
-        embed.set_footer(text="Data retrieved from CoinMarketCap")
-
-        # Send the message
-        await ctx.send(embed=embed)
-        
-    else:
-        # HTTP request is not successful, display error message
-        await ctx.send(f"There was an error fetching the cryptocurrency list. Error Code: {response.status_code}")
-
-# Function to display top 5 cryptocurrencies by market cap (include symbol, name, price as well)
-@bot.command()
-async def top5(ctx):
-    # Fetch cryptocurrencies (sorted by market cap) with url below
-    url = 'https://pro-api.coinmarketcap.com/v1/cryptocurrency/listings/latest'
-    
-    # Headers for CoinMarketCap API authentication
-    headers = { 
-        'X-CMC_PRO_API_KEY': API_KEY,
-        'Accepts': 'application/json'
-    }
-
-    # Only access the top 5 of those listings, and return their prices in USD
-    parameters = {
-        'start': '1',
-        'limit': '5', 
-        'convert': 'USD'
-    }
-
-    # Send and HTTP request for the data
-    response = requests.get(url, params=parameters, headers=headers)
-
-    # HTTP request is successful, run following code
-    if response.status_code == 200:
-        # Parse the response as JSON data
-        data = response.json()
-
-        # Create the embed to hold the message
-        embed = discord.Embed(
-            title="Top 5 Cryptocurrencies by Market Cap",
-            color=discord.Color.dark_purple()
-        )
-
-        # Iterate through every value in the JSON data (each coin's data)
-        for coin in data['data']:
-            # Add name and symbol to one field; price and market cap in another
-            name_symbol = f"{coin['cmc_rank']}. {coin['name']} ({coin['symbol']})"
-            price_market_cap = f"Price: ${coin['quote']['USD']['price']:,.2f}\nMarket Cap: ${coin['quote']['USD']['market_cap']:,.0f}"
-            
-            # Each cryptocurrency is added as a new field
-            embed.add_field(name=name_symbol, value=price_market_cap, inline=False)
-
-        # Set a professional footer to the message
-        embed.set_footer(text="Data retrieved from CoinMarketCap")
-
-        # Send the message
-        await ctx.send(embed=embed)
-    
-    # HTTP request is not successful, display error message
-    else:    
-        await ctx.send(f"There was an error fetching the cryptocurrency list. Error Code: {response.status_code}")
-
-# Test method for preview of embeded messages
-@bot.command()
-async def embed_test(ctx):
-    embed = discord.Embed(
-        title="Bitcoin (BTC)",
-        description="Here's some info about Bitcoin\n(The below values are placeholders)",
-        color=discord.Color.dark_purple()
-    )
-
-    # Adding various fields to the embed
-    embed.add_field(name="Price", value="$40,000", inline=False)
-    embed.add_field(name="Market Cap", value="$700B", inline=False)
-    embed.add_field(name="24h Volume", value="$35B", inline=False)
-
-    embed.set_footer(text="Data retrieved from CoinMarketCap")
-
-    await ctx.send(embed=embed)
-
-# Run the bot
-bot.run(BOT_TOKEN)
+if __name__ == '__main__':
+    asyncio.run(main())
