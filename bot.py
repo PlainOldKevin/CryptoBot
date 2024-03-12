@@ -43,7 +43,7 @@ async def main():
             print(f"Failed to load cog: {cog}")
             print(f"[ERROR] {e}")
 
-    await bot.start(TEST_TOKEN)
+    await bot.start(BOT_TOKEN)
 
 if __name__ == '__main__':
     asyncio.run(main())
