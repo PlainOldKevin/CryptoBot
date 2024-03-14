@@ -33,7 +33,7 @@ async def hello(ctx):
 # Main function to handle bot's cog loading and running
 async def main():
     # List of all the cog files (to be loaded into the bot below)
-    cogs_list = ['prices_cog']
+    cogs_list = ['cogs.prices_cog']
 
     # Load the extensions into the bot
     for cog in cogs_list:
