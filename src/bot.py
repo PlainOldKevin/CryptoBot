@@ -18,7 +18,7 @@ intents = discord.Intents.default()
 intents.message_content = True
 
 # Initialiaze bot
-bot = commands.Bot(command_prefix='!', intents=intents)
+bot = commands.Bot(command_prefix='/', intents=intents)
 
 # Run function when bot is initialized
 @bot.event
@@ -44,7 +44,7 @@ async def main():
             print(f"Failed to load cog: {cog}")
             print(f"[ERROR] {e}")
 
-    await bot.start(BOT_TOKEN)
+    await bot.start(TEST_TOKEN)
 
 # Run the asynchronous main method (containing bot initialization)
 if __name__ == '__main__':
