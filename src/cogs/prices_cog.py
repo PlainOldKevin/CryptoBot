@@ -61,57 +61,80 @@ class PricesCog(commands.Cog):
             # HTTP request is not successful, display error message
             await ctx.send(f"There was an error fetching the cryptocurrency list. Error Code: {response.status_code}")
 
-    # Function to display top 5 cryptocurrencies by market cap (include symbol, name, price as well)
+    # Function to display custom (up to 10) amount of top cryptocurrencies by market cap (includes symbol, name, price as well)
     @commands.command()
-    async def top5(self, ctx):
-        # Fetch cryptocurrencies (sorted by market cap) with url below
-        url = 'https://pro-api.coinmarketcap.com/v1/cryptocurrency/listings/latest'
-        
-        # Headers for CoinMarketCap API authentication
-        headers = { 
-            'X-CMC_PRO_API_KEY': self.api_key,
-            'Accepts': 'application/json'
-        }
+    async def topcap(self, ctx, number: int):
+        # Check if input is valid, proceed if so
+        if 10 >= number >= 1:
 
-        # Only access the top 5 of those listings, and return their prices in USD
-        parameters = {
-            'start': '1',
-            'limit': '5', 
-            'convert': 'USD'
-        }
+            # Fetch cryptocurrencies (sorted by market cap) with url below
+            url = 'https://pro-api.coinmarketcap.com/v1/cryptocurrency/listings/latest'
+            
+            # Headers for CoinMarketCap API authentication
+            headers = { 
+                'X-CMC_PRO_API_KEY': self.api_key,
+                'Accepts': 'application/json'
+            }
 
-        # Send and HTTP request for the data
-        response = requests.get(url, params=parameters, headers=headers)
+            # Only access the top 5 of those listings, and return their prices in USD
+            parameters = {
+                'start': '1',
+                'limit': number, 
+                'convert': 'USD'
+            }
 
-        # HTTP request is successful, run following code
-        if response.status_code == 200:
-            # Parse the response as JSON data
-            data = response.json()
+            # Send and HTTP request for the data
+            response = requests.get(url, params=parameters, headers=headers)
 
-            # Create the embed to hold the message
+            # HTTP request is successful, run following code
+            if response.status_code == 200:
+                # Parse the response as JSON data
+                data = response.json()
+
+                # Check user input before we create embed (for accurate grammar in title)
+                if number == 1:
+                    title = "Top Cryptocurrency by Market Cap"
+                else:
+                    title = f"Top {str(number)} Cryptocurrencies by Market Cap"
+
+                # Create the embed to hold the message
+                embed = discord.Embed(
+                    title=title,
+                    color=discord.Color.dark_purple()
+                )
+
+                # Iterate through every value in the JSON data (each coin's data)
+                for coin in data['data']:
+                    # Add name and symbol to one field; price and market cap in another
+                    name_symbol = f"{coin['cmc_rank']}. {coin['name']} ({coin['symbol']})"
+                    price_market_cap = f"Price: ${coin['quote']['USD']['price']:,.2f}\nMarket Cap: ${coin['quote']['USD']['market_cap']:,.0f}"
+                    
+                    # Each cryptocurrency is added as a new field
+                    embed.add_field(name=name_symbol, value=price_market_cap, inline=False)
+
+                # Set a professional footer to the message
+                embed.set_footer(text="Data retrieved from CoinMarketCap")
+
+                # Send the message
+                await ctx.send(embed=embed)
+
+            # HTTP request is not successful, display error message
+            else:    
+                await ctx.send(f"There was an error fetching the cryptocurrency list. Error Code: {response.status_code}")
+
+        # If the user input was invalid, tell the user to try again
+        else:
+            # Make a pretty embed for the user's unfortunate news
             embed = discord.Embed(
-                title="Top 5 Cryptocurrencies by Market Cap",
-                color=discord.Color.dark_purple()
+                title="ERROR",
+                color=0xC41E3A
             )
 
-            # Iterate through every value in the JSON data (each coin's data)
-            for coin in data['data']:
-                # Add name and symbol to one field; price and market cap in another
-                name_symbol = f"{coin['cmc_rank']}. {coin['name']} ({coin['symbol']})"
-                price_market_cap = f"Price: ${coin['quote']['USD']['price']:,.2f}\nMarket Cap: ${coin['quote']['USD']['market_cap']:,.0f}"
-                
-                # Each cryptocurrency is added as a new field
-                embed.add_field(name=name_symbol, value=price_market_cap, inline=False)
+            # Add the bad news
+            embed.add_field(name="Invalid argument", value="Please enter a valid input (1-10)", inline=False)
 
-            # Set a professional footer to the message
-            embed.set_footer(text="Data retrieved from CoinMarketCap")
-
-            # Send the message
+            # Deliver
             await ctx.send(embed=embed)
-        
-        # HTTP request is not successful, display error message
-        else:    
-            await ctx.send(f"There was an error fetching the cryptocurrency list. Error Code: {response.status_code}")
 
     # Test method for preview of embeded messages
     @commands.command()
