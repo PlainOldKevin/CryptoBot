@@ -31,36 +31,38 @@ class PricesCog(commands.Cog):
             'symbol': symbol.upper(),
         }
 
-        # Send and HTTP request for the data
-        response = requests.get(url, params=parameters, headers=headers)
+        # Asynchronously create a ClientSession (so the bot can make multiple HTTP calls and not get blocked from just one call)
+        async with aiohttp.ClientSession() as session:
+            # The actual request
+            async with session.get(url, params=parameters, headers=headers) as response:
+                # Request successsful,
+                if response.status == 200:
+                    # Parse the response as JSON data
+                    data = await response.json()
+                
+                    # Create the embed to hold the message
+                    embed = discord.Embed(
+                        title=f"{data['data'][symbol.upper()]['name']}",
+                        color=discord.Color.dark_purple()
+                    )
 
-        # HTTP request is successful, run following code
-        if response.status_code == 200:
-            # Parse the response as JSON data
-            data = response.json()
-            
-            # Create the embed to hold the message
-            embed = discord.Embed(
-                title=f"{data['data'][symbol.upper()]['name']}",
-                color=discord.Color.dark_purple()
-            )
+                    # Find the price of the specified crypto and assign it to memory, next add this price to an f-string to add to embed field
+                    price = data['data'][symbol.upper()]['quote']['USD']['price']
+                    price_value_string = f"${price:,.2f}"
 
-            # Find the price of the specified crypto and assign it to memory, next add this price to an f-string to add to embed field
-            price = data['data'][symbol.upper()]['quote']['USD']['price']
-            price_value_string = f"${price:,.2f}"
+                    # Add it to the embed
+                    embed.add_field(name="Price (USD):", value=price_value_string, inline=False)
 
-            # Add it to the embed
-            embed.add_field(name="Price (USD):", value=price_value_string, inline=False)
+                    # Set a professional footer to the message
+                    embed.set_footer(text="Data retrieved from CoinMarketCap")
 
-            # Set a professional footer to the message
-            embed.set_footer(text="Data retrieved from CoinMarketCap")
-
-            # Send the message
-            await ctx.send(embed=embed)
-            
-        else:
-            # HTTP request is not successful, display error message
-            await ctx.send(f"There was an error fetching the cryptocurrency list. Error Code: {response.status_code}")
+                    # Send the message
+                    await ctx.send(embed=embed)
+                
+                # If the request was not successful,
+                else:
+                    # Display error message
+                    await ctx.send(f"There was an error fetching the cryptocurrency list. Error Code: {response.status_code}")
 
     # Function to display custom (up to 10) amount of top cryptocurrencies by market cap (includes symbol, name, price as well)
     @commands.command()
@@ -120,8 +122,18 @@ class PricesCog(commands.Cog):
                 await ctx.send(embed=embed)
 
             # HTTP request is not successful, display error message
-            else:    
-                await ctx.send(f"There was an error fetching the cryptocurrency list. Error Code: {response.status_code}")
+            else:
+                # Make a pretty embed for the user's unfortunate news
+                embed = discord.Embed(
+                    title="ERROR",
+                    color=0xC41E3A
+                )
+
+                # Add the bad news
+                embed.add_field(name="There was an error fetching the cryptocurrency list", value="Error Code: {response.status_code}", inline=False)
+
+                # Deliver
+                await ctx.send(embed=embed)
 
         # If the user input was invalid, tell the user to try again
         else:

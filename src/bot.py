@@ -44,7 +44,7 @@ async def main():
             print(f"Failed to load cog: {cog}")
             print(f"[ERROR] {e}")
 
-    await bot.start(BOT_TOKEN)
+    await bot.start(TEST_TOKEN)
 
 # Run the asynchronous main method (containing bot initialization)
 if __name__ == '__main__':
