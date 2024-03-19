@@ -3,6 +3,7 @@ import discord
 from discord.ext import commands
 import requests
 import os
+import aiohttp
 
 # Create class
 class PricesCog(commands.Cog):
@@ -24,7 +25,7 @@ class PricesCog(commands.Cog):
             'Accepts': 'application/json'
         }
 
-        # Return their prices in USD
+        # Parameters for the search to query the url
         parameters = { 
             'convert': 'USD',
             'symbol': symbol.upper(),
@@ -131,10 +132,67 @@ class PricesCog(commands.Cog):
             )
 
             # Add the bad news
-            embed.add_field(name="Invalid argument", value="Please enter a valid input (1-10)", inline=False)
+            embed.add_field(name="Invalid input", value="Please enter a valid input (1-10)", inline=False)
 
             # Deliver
             await ctx.send(embed=embed)
+
+    # Function to display the 'id' value of a specific coin from CMC API
+    @commands.command()
+    async def id(self, ctx, name: str):
+        # Fetch specified crypto using this url + extension (it has every crypto easily accessible) 
+        url = 'https://pro-api.coinmarketcap.com/v1/cryptocurrency/map'
+
+        # Headers for CoinMarketCap API authentication
+        headers = { 
+            'X-CMC_PRO_API_KEY': self.api_key,
+            'Accepts': 'application/json'
+        }
+
+        # Asynchronously create a ClientSession (so the bot can make multiple HTTP calls and not get blocked from just one call)
+        async with aiohttp.ClientSession() as session:
+            # The actual request
+            async with session.get(url, headers=headers) as response:
+                # Request successsful,
+                if response.status == 200:
+                    # Parse the response as JSON data
+                    data = await response.json()
+
+                    # Search for id in crypto map (so efficient and amazing omg I defintely don't wish there was a better way to do this!)
+                    crypto_id = next((item for item in data['data'] if item['name'].lower() == name.lower()), None)
+
+                    # Create logic for crypto being found in map
+                    if crypto_id:
+
+                        # Create the embed to hold the message
+                        embed = discord.Embed(
+                            title="Coin-Specific CMC API id",
+                            color=discord.Color.dark_purple()
+                        )
+
+                        # Add info to embed
+                        embed.add_field(name=f"{crypto_id['name']} id:", value=f"{crypto_id['id']}", inline=False)
+
+                        # Add footer to embed
+                        embed.set_footer(text="Data retrieved from CoinMarketCap")
+
+                        # Send message
+                        await ctx.send(embed=embed)
+                    
+                    # If crypto not found in map,
+                    else:
+                        # Make a pretty embed for the user's unfortunate news
+                        embed = discord.Embed(
+                            title="ERROR",
+                            color=0xC41E3A
+                        )
+
+                        # Add the bad news
+                        embed.add_field(name="Invalid input", value="Cryptocurrency and id not found. Check your spelling and try again.", inline=False)
+
+                        # Deliver
+                        await ctx.send(embed=embed)
+
 
     # Test method for preview of embeded messages
     @commands.command()
