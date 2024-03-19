@@ -193,7 +193,6 @@ class PricesCog(commands.Cog):
                         # Deliver
                         await ctx.send(embed=embed)
 
-
     # Test method for preview of embeded messages
     @commands.command()
     async def embed_test(self, ctx):
