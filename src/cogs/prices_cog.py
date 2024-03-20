@@ -225,7 +225,7 @@ class PricesCog(commands.Cog):
                         )
 
                         # Add the bad news
-                        embed.add_field(name="Invalid input", value="Cryptocurrency and id not found. Check your spelling and try again.", inline=False)
+                        embed.add_field(name="Invalid input", value="The cryptocurrency you provided is not recognized. Please check the spelling and try again.", inline=False)
 
                         # Deliver
                         await ctx.send(embed=embed)
