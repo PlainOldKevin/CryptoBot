@@ -39,30 +39,54 @@ class PricesCog(commands.Cog):
                 if response.status == 200:
                     # Parse the response as JSON data
                     data = await response.json()
+
+                    # Check if symbol is in the response data (CMC API send 200s no matter what idk why)
+                    if symbol.upper() in data['data']:
                 
-                    # Create the embed to hold the message
-                    embed = discord.Embed(
-                        title=f"{data['data'][symbol.upper()]['name']}",
-                        color=discord.Color.dark_purple()
-                    )
+                        # Create the embed to hold the message
+                        embed = discord.Embed(
+                            title=f"{data['data'][symbol.upper()]['name']}",
+                            color=discord.Color.dark_purple()
+                        )
 
-                    # Find the price of the specified crypto and assign it to memory, next add this price to an f-string to add to embed field
-                    price = data['data'][symbol.upper()]['quote']['USD']['price']
-                    price_value_string = f"${price:,.2f}"
+                        # Find the price of the specified crypto and assign it to memory, next add this price to an f-string to add to embed field
+                        price = data['data'][symbol.upper()]['quote']['USD']['price']
+                        price_value_string = f"${price:,.2f}"
 
-                    # Add it to the embed
-                    embed.add_field(name="Price (USD):", value=price_value_string, inline=False)
+                        # Add it to the embed
+                        embed.add_field(name="Price (USD):", value=price_value_string, inline=False)
 
-                    # Set a professional footer to the message
-                    embed.set_footer(text="Data retrieved from CoinMarketCap")
+                        # Set a professional footer to the message
+                        embed.set_footer(text="Data retrieved from CoinMarketCap")
 
-                    # Send the message
-                    await ctx.send(embed=embed)
+                        # Send the message
+                        await ctx.send(embed=embed)
+
+                    # If symbol not in response data (user messed up)
+                    else:
+                        # Make a pretty embed for the user's unfortunate news
+                        embed = discord.Embed(
+                            title="ERROR",
+                            color=0xC41E3A
+                        )
+
+                        # Add field with details
+                        embed.add_field(name="Cryptocurrency not found", value="The symbol you provided is not recognized. Please check the symbol and try again.", inline=False)
+
+                        # Send the message
+                        await ctx.send(embed=embed)
                 
                 # If the request was not successful,
                 else:
-                    # Display error message
-                    await ctx.send(f"There was an error fetching the cryptocurrency list. Error Code: {response.status_code}")
+                    # Make a pretty embed for the user's unfortunate news
+                    embed = discord.Embed(
+                        title="ERROR",
+                        description="An error occurred while fetching the data.",
+                        color=0xC41E3A
+                    )
+
+                    # Send the message
+                    await ctx.send(embed=embed)
 
     # Function to display custom (up to 10) amount of top cryptocurrencies by market cap (includes symbol, name, price as well)
     @commands.command()
@@ -86,54 +110,55 @@ class PricesCog(commands.Cog):
                 'convert': 'USD'
             }
 
-            # Send and HTTP request for the data
-            response = requests.get(url, params=parameters, headers=headers)
+            # Asynchronously create a ClientSession (so the bot can make multiple HTTP calls and not get blocked from just one call)
+            async with aiohttp.ClientSession() as session:
+                # The actual request
+                async with session.get(url, params=parameters, headers=headers) as response:
+                    # Request successsful,
+                    if response.status == 200:
+                        # Parse the response as JSON data
+                        data = await response.json()
 
-            # HTTP request is successful, run following code
-            if response.status_code == 200:
-                # Parse the response as JSON data
-                data = response.json()
+                        # Check user input before we create embed (for accurate grammar in title)
+                        if number == 1:
+                            title = "Top Cryptocurrency by Market Cap"
+                        else:
+                            title = f"Top {str(number)} Cryptocurrencies by Market Cap"
 
-                # Check user input before we create embed (for accurate grammar in title)
-                if number == 1:
-                    title = "Top Cryptocurrency by Market Cap"
-                else:
-                    title = f"Top {str(number)} Cryptocurrencies by Market Cap"
+                        # Create the embed to hold the message
+                        embed = discord.Embed(
+                            title=title,
+                            color=discord.Color.dark_purple()
+                        )
 
-                # Create the embed to hold the message
-                embed = discord.Embed(
-                    title=title,
-                    color=discord.Color.dark_purple()
-                )
+                        # Iterate through every value in the JSON data (each coin's data)
+                        for coin in data['data']:
+                            # Add name and symbol to one field; price and market cap in another
+                            name_symbol = f"{coin['cmc_rank']}. {coin['name']} ({coin['symbol']})"
+                            price_market_cap = f"Price: ${coin['quote']['USD']['price']:,.2f}\nMarket Cap: ${coin['quote']['USD']['market_cap']:,.0f}"
+                            
+                            # Each cryptocurrency is added as a new field
+                            embed.add_field(name=name_symbol, value=price_market_cap, inline=False)
 
-                # Iterate through every value in the JSON data (each coin's data)
-                for coin in data['data']:
-                    # Add name and symbol to one field; price and market cap in another
-                    name_symbol = f"{coin['cmc_rank']}. {coin['name']} ({coin['symbol']})"
-                    price_market_cap = f"Price: ${coin['quote']['USD']['price']:,.2f}\nMarket Cap: ${coin['quote']['USD']['market_cap']:,.0f}"
-                    
-                    # Each cryptocurrency is added as a new field
-                    embed.add_field(name=name_symbol, value=price_market_cap, inline=False)
+                            # Set a professional footer to the message
+                            embed.set_footer(text="Data retrieved from CoinMarketCap")
 
-                # Set a professional footer to the message
-                embed.set_footer(text="Data retrieved from CoinMarketCap")
+                            # Send the message
+                            await ctx.send(embed=embed)
 
-                # Send the message
-                await ctx.send(embed=embed)
+                        # HTTP request is not successful, display error message
+                        else:
+                            # Make a pretty embed for the user's unfortunate news
+                            embed = discord.Embed(
+                                title="ERROR",
+                                color=0xC41E3A
+                            )
 
-            # HTTP request is not successful, display error message
-            else:
-                # Make a pretty embed for the user's unfortunate news
-                embed = discord.Embed(
-                    title="ERROR",
-                    color=0xC41E3A
-                )
+                            # Add the bad news
+                            embed.add_field(name="There was an error fetching the cryptocurrency list", value="Error Code: {response.status_code}", inline=False)
 
-                # Add the bad news
-                embed.add_field(name="There was an error fetching the cryptocurrency list", value="Error Code: {response.status_code}", inline=False)
-
-                # Deliver
-                await ctx.send(embed=embed)
+                            # Deliver
+                            await ctx.send(embed=embed)
 
         # If the user input was invalid, tell the user to try again
         else:
