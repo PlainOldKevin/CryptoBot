@@ -4,7 +4,6 @@ from discord.ext import commands
 import os
 import asyncio
 from dotenv import load_dotenv
-from cogs.prices_cog import PricesCog
 
 # Initialize load-env for token accessing
 load_dotenv()

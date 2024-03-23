@@ -297,24 +297,6 @@ class PricesCog(commands.Cog):
                         # Deliver
                         await ctx.send(embed=embed)
 
-    # Test method for preview of embeded messages
-    @commands.command()
-    async def embed_test(self, ctx):
-        embed = discord.Embed(
-            title="Bitcoin (BTC)",
-            description="Here's some info about Bitcoin\n(The below values are placeholders)",
-            color=discord.Color.dark_purple()
-        )
-
-        # Adding various fields to the embed
-        embed.add_field(name="Price", value="$40,000", inline=False)
-        embed.add_field(name="Market Cap", value="$700B", inline=False)
-        embed.add_field(name="24h Volume", value="$35B", inline=False)
-
-        embed.set_footer(text="Data retrieved from CoinMarketCap")
-
-        await ctx.send(embed=embed)
-
 # Setup function to load the cog into the bot
 async def setup(bot):
     try:
