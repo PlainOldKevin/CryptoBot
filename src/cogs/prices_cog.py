@@ -1,7 +1,7 @@
 # Imports
 import discord
 from discord.ext import commands
-import requests
+from decimal import *
 import os
 import aiohttp
 
@@ -12,6 +12,58 @@ class PricesCog(commands.Cog):
     def __init__(self, bot):
         self.bot = bot 
         self.api_key = os.getenv('KEY')
+
+    # Internal helper function for price display (to display prices below $0.01, instead of just `0.00`) to be used inside of other functions
+    @staticmethod
+    def format_crypto_price(price) -> str:
+        # Convert the price (from the CMC API call) to a Decimal object (instead of float. Gives us more precision instead of worrying about float rounding conventions)
+        price = Decimal(str(price))
+        
+        # If price is >= $1.00, format with two decimal places and return (ezpz)
+        if price >= Decimal('1.00'):
+            return f"${price:,.2f}"
+        # If price is between $1.00 and $0.01, show 4 decimal places exactly (ezpz)
+        elif Decimal('1.00') > price >= Decimal('0.01'):
+            # Format the price exactly as-is; cut off at 4 decimals
+            formatted_price = f"${price.quantize(Decimal('0.0001'), rounding=ROUND_DOWN)}"
+            # Return the price with no trailing zeros
+            return formatted_price.rstrip('0')
+        # If less than $0.01,
+        else:
+            # Define the number of digits to cut off the number at (to avoid overflow or Discord message errors) (I use 15 arbitrarily; beginning-string slicing is non-inclusive)
+            MAX_DIGITS = 16
+
+            # Convert the price to string (within the fixed-point context 'f') for further breakdown/analysis
+            raw_price_str = format(price, 'f')
+
+            # Extract the decimal portion out of the string (because we only care about the decimal here, being that the price is less than 1 cent)
+            raw_decimal_str = raw_price_str.split('.')[1]
+
+            # Create variable to store the first non-zero index in our decimal point (beyond the hundreths place obv)
+            # Set to None as we do not know the first non-zero index yet
+            non_zero_index = None
+            
+            # Use a for loop (with enumerate) to iterate over to 'digits' (characters) in our string to see if we can find a non-zero index in our first 15 indices
+            for i, digit in enumerate(raw_decimal_str[:MAX_DIGITS], 1):
+                # Check if digit is non-zero (remember, we are enumerating over a string!)
+                if digit != '0':
+                    # Store this non-zero index
+                    non_zero_index = i
+                    # Exit loop; we got what we need
+                    break
+            
+            # If the number cannot be formatted, return None and handle the issue in the calling function
+            if non_zero_index == None:
+                return "0"
+
+            # Otherwise,
+            else:
+                # Choose the number's display cutoff (using non_zero_index + 2 for context beyond just the one decimal place found; MAX_DIGITS for max-length arbitrary cutoff)
+                displayed_sigfigs = min(non_zero_index + 2, MAX_DIGITS)
+                # Format as string
+                formatted_number = f"${price:.{displayed_sigfigs}f}"
+                # And return
+                return formatted_number
 
     # Function to automatically fetch the price of any cryptocurrency
     @commands.command()
@@ -31,7 +83,7 @@ class PricesCog(commands.Cog):
             'symbol': symbol.upper(),
         }
 
-        # Asynchronously create a ClientSession (so the bot can make multiple HTTP calls and not get blocked from just one call)
+        # Asynchronously create a ClientSession (so the bot can make multiple HTTP calls and not get blocked from just one call) (really useful for big boy apps and bots)
         async with aiohttp.ClientSession() as session:
             # The actual request
             async with session.get(url, params=parameters, headers=headers) as response:
@@ -42,25 +94,40 @@ class PricesCog(commands.Cog):
 
                     # Check if symbol is in the response data (CMC API send 200s no matter what idk why)
                     if symbol.upper() in data['data']:
-                
-                        # Create the embed to hold the message
-                        embed = discord.Embed(
-                            title=f"{data['data'][symbol.upper()]['name']}",
-                            color=discord.Color.dark_purple()
-                        )
 
-                        # Find the price of the specified crypto and assign it to memory, next add this price to an f-string to add to embed field
-                        price = data['data'][symbol.upper()]['quote']['USD']['price']
-                        price_value_string = f"${price:,.2f}"
+                        # Find the price of the specified crypto and use the helper function that I spent 8 years on to format it
+                        price_value_string = self.format_crypto_price(data['data'][symbol.upper()]['quote']['USD']['price'])
 
-                        # Add it to the embed
-                        embed.add_field(name="Price (USD):", value=price_value_string, inline=False)
+                        # Check if the price is too small and create an embed
+                        if price_value_string == "0":
+                            # Make a pretty embed for the user's unfortunate news
+                            embed = discord.Embed(
+                                title="ERROR",
+                                color=0xC41E3A
+                            )
 
-                        # Set a professional footer to the message
-                        embed.set_footer(text="Data retrieved from CoinMarketCap")
+                            # Add field with details
+                            embed.add_field(name="Price display error", value="The price of this coin is too small to display. For more accurate results, visit [coinmarketcap.com](https://coinmarketcap.com/)", inline=False)
 
-                        # Send the message
-                        await ctx.send(embed=embed)
+                            # Send the message
+                            await ctx.send(embed=embed)
+
+                        # If price can be displayed,
+                        else:
+                            # Create the embed to hold the message
+                            embed = discord.Embed(
+                                title=f"{data['data'][symbol.upper()]['name']}",
+                                color=discord.Color.dark_purple()
+                            )
+
+                            # Add it to the embed
+                            embed.add_field(name="Price (USD):", value=price_value_string, inline=False)
+
+                            # Set a professional footer to the message
+                            embed.set_footer(text="Data retrieved from CoinMarketCap")
+
+                            # Send the message
+                            await ctx.send(embed=embed)
 
                     # If symbol not in response data (user messed up)
                     else:
@@ -135,7 +202,7 @@ class PricesCog(commands.Cog):
                         for coin in data['data']:
                             # Add name and symbol to one field; price and market cap in another
                             name_symbol = f"{coin['cmc_rank']}. {coin['name']} ({coin['symbol']})"
-                            price_market_cap = f"Price: ${coin['quote']['USD']['price']:,.2f}\nMarket Cap: ${coin['quote']['USD']['market_cap']:,.0f}"
+                            price_market_cap = f"Price: {self.format_crypto_price(coin['quote']['USD']['price'])}\nMarket Cap: ${coin['quote']['USD']['market_cap']:,.0f}"
                             
                             # Each cryptocurrency is added as a new field
                             embed.add_field(name=name_symbol, value=price_market_cap, inline=False)
@@ -143,22 +210,22 @@ class PricesCog(commands.Cog):
                             # Set a professional footer to the message
                             embed.set_footer(text="Data retrieved from CoinMarketCap")
 
-                            # Send the message
-                            await ctx.send(embed=embed)
+                        # Send the message
+                        await ctx.send(embed=embed)
 
-                        # HTTP request is not successful, display error message
-                        else:
-                            # Make a pretty embed for the user's unfortunate news
-                            embed = discord.Embed(
-                                title="ERROR",
-                                color=0xC41E3A
-                            )
+                    # HTTP request is not successful, display error message
+                    else:
+                        # Make a pretty embed for the user's unfortunate news
+                        embed = discord.Embed(
+                            title="ERROR",
+                            color=0xC41E3A
+                        )
 
-                            # Add the bad news
-                            embed.add_field(name="There was an error fetching the cryptocurrency list", value="Error Code: {response.status_code}", inline=False)
+                        # Add the bad news
+                        embed.add_field(name="There was an error fetching the cryptocurrency list", value=f"Error Code: {response.status_code}", inline=False)
 
-                            # Deliver
-                            await ctx.send(embed=embed)
+                        # Deliver
+                        await ctx.send(embed=embed)
 
         # If the user input was invalid, tell the user to try again
         else:
