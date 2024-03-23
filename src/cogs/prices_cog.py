@@ -16,6 +16,10 @@ class PricesCog(commands.Cog):
     # Internal helper function for price display (to display prices below $0.01, instead of just `0.00`) to be used inside of other functions
     @staticmethod
     def format_crypto_price(price) -> str:
+        # Check if the price exists
+        if price is None:
+            return "0"
+
         # Convert the price (from the CMC API call) to a Decimal object (instead of float. Gives us more precision instead of worrying about float rounding conventions)
         price = Decimal(str(price))
         
@@ -65,7 +69,7 @@ class PricesCog(commands.Cog):
                 # And return
                 return formatted_number
 
-    # Function to automatically fetch the price of any cryptocurrency
+    # Function to automatically fetch the price of any cryptocurrency using its symbol as the arg
     @commands.command()
     async def price(self, ctx, symbol: str):
         # Fetch cryptocurrencies with url below
@@ -151,6 +155,100 @@ class PricesCog(commands.Cog):
                         description="An error occurred while fetching the data.",
                         color=0xC41E3A
                     )
+
+                    # Send the message
+                    await ctx.send(embed=embed)
+
+    # Function to automatically fetch the price of any cryptocurrency using its id as the arg
+    @commands.command()
+    async def priceid(self, ctx, id: int):
+        # Fetch cryptocurrencies with url below
+        url = 'https://pro-api.coinmarketcap.com/v2/cryptocurrency/quotes/latest'
+        
+        # Headers for CoinMarketCap API authentication
+        headers = { 
+            'X-CMC_PRO_API_KEY': self.api_key,
+            'Accepts': 'application/json'
+        }
+
+        # Parameters for the search to query the url
+        parameters = { 
+            'convert': 'USD',
+            'id': id,
+        }
+
+        # Asynchronously create a ClientSession (so the bot can make multiple HTTP calls and not get blocked from just one call) (really useful for big boy apps and bots)
+        async with aiohttp.ClientSession() as session:
+            # The actual request
+            async with session.get(url, params=parameters, headers=headers) as response:
+                # Request successsful,
+                if response.status == 200:
+                    # Parse the response as JSON data
+                    data = await response.json()
+
+                    # Check if id is in the response data (CMC API send 200s no matter what idk why)
+                    if str(id) in data['data']:
+
+                        # Find the price of the specified crypto and use the helper function that I spent 8 years on to format it
+                        price_value_string = self.format_crypto_price(data['data'][str(id)]['quote']['USD']['price'])
+
+                        # Check if the price is too small and create an embed
+                        if price_value_string == "0" or price_value_string is None:
+
+                            # Make a pretty embed for the user's unfortunate news
+                            embed = discord.Embed(
+                                title="ERROR",
+                                color=0xC41E3A
+                            )
+
+                            # Add field with details
+                            embed.add_field(name="Price display error", value="The price of this coin does not exist, or is too small to display. For more accurate results, visit [coinmarketcap.com](https://coinmarketcap.com/).", inline=False)
+
+                            # Send the message
+                            await ctx.send(embed=embed)
+
+                        # If price can be displayed,
+                        else:
+
+                            # Create the embed to hold the message
+                            embed = discord.Embed(
+                                title=f"{data['data'][str(id)]['name']}",
+                                color=discord.Color.dark_purple()
+                            )
+
+                            # Add it to the embed
+                            embed.add_field(name="Price (USD):", value=price_value_string, inline=False)
+
+                            # Set a professional footer to the message
+                            embed.set_footer(text="Data retrieved from CoinMarketCap")
+
+                            # Send the message
+                            await ctx.send(embed=embed)
+
+                    # If id not in response data (user messed up)
+                    else:
+                        # Make a pretty embed for the user's unfortunate news
+                        embed = discord.Embed(
+                            title="ERROR",
+                            color=0xC41E3A
+                        )
+
+                        # Add field with details
+                        embed.add_field(name="Cryptocurrency not found", value="The id you provided is not recognized. Please check the id and try again.", inline=False)
+
+                        # Send the message
+                        await ctx.send(embed=embed)
+                
+                # If the request was not successful,
+                else:
+                    # Make a pretty embed for the user's unfortunate news
+                    embed = discord.Embed(
+                        title="ERROR",
+                        color=0xC41E3A
+                    )
+
+                    # Add field with details
+                    embed.add_field(name="Cryptocurrency not found", value="The id you provided is not recognized. Please check the id and try again.", inline=False)
 
                     # Send the message
                     await ctx.send(embed=embed)
