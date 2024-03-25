@@ -163,8 +163,8 @@ class PricesCog(commands.Cog):
     # Function to automatically fetch the price of any cryptocurrency using its (CoinGecko) id as the arg
     @commands.command()
     async def priceid(self, ctx, id: str):
-        # Fetch cryptocurrencies with url below
-        url = f'https://api.coingecko.com/api/v3/simple/price'
+        # Fetch cryptocurrencies with markets endpoint (provides some better data than simple/price endpoint)
+        url = f'https://api.coingecko.com/api/v3/coins/markets'
         
         # Headers for CoinGecko API authentication
         headers = { 
@@ -173,27 +173,30 @@ class PricesCog(commands.Cog):
 
         # Parameters for the search to query the url
         parameters = { 
-            'vs_currencies': 'usd',
-            'precision': '15',
+            'vs_currency': 'usd',
             'ids': id,
+            'precision': '15',
         }
 
         # Asynchronously create a ClientSession (so the bot can make multiple HTTP calls and not get blocked from just one call)
         async with aiohttp.ClientSession() as session:
-            # Make the aynchronous, request
+            # Make the aynchronous request to the api
             async with session.get(url, params=parameters, headers=headers) as response:
                 # If request successsful,
                 if response.status == 200:
                     # Parse the response as JSON data
                     data = await response.json()
 
-                    # Check if id is in the response data
-                    if id in data:
+                    # Reassign the JSON data to a variable for easier token access
+                    crypto_data = data[0]
+
+                    # Check if response data successfully retrieved,
+                    if crypto_data:
 
                         # Find the price of the specified crypto and use the helper function that I spent 8 years on to format it
-                        price_value_string = self.format_crypto_price(data[id]['usd'])
+                        price_value_string = self.format_crypto_price(crypto_data['current_price'])
 
-                        # Check if the price is too small and create an embed
+                        # Check if the price is too small (or null) and create an embed
                         if price_value_string == "0":
 
                             # Make a pretty embed for the user's unfortunate news
@@ -213,7 +216,7 @@ class PricesCog(commands.Cog):
 
                             # Create the embed to hold the message
                             embed = discord.Embed(
-                                title=f"{id}",
+                                title=f"{crypto_data['name']}",
                                 color=discord.Color.dark_purple()
                             )
 
