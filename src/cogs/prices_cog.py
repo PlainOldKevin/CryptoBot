@@ -187,11 +187,11 @@ class PricesCog(commands.Cog):
                     # Parse the response as JSON data
                     data = await response.json()
 
-                    # Reassign the JSON data to a variable for easier token access
-                    crypto_data = data[0]
+                    # Check if our parameter is in the response data,
+                    if data:
 
-                    # Check if response data successfully retrieved,
-                    if crypto_data:
+                        # Reassign the JSON data to a variable for easier token access (because we GET a list of one dict)
+                        crypto_data = data[0]
 
                         # Find the price of the specified crypto and use the helper function that I spent 8 years on to format it
                         price_value_string = self.format_crypto_price(crypto_data['current_price'])
@@ -210,7 +210,6 @@ class PricesCog(commands.Cog):
 
                             # Send the message
                             await ctx.send(embed=embed)
-
                         # If price can be displayed,
                         else:
 
@@ -236,7 +235,7 @@ class PricesCog(commands.Cog):
                             title="ERROR",
                             color=0xC41E3A
                         )
-
+                        
                         # Add field with details
                         embed.add_field(name="Cryptocurrency not found", value="The id you provided is not recognized. Please check the id and try again.", inline=False)
 
@@ -252,7 +251,7 @@ class PricesCog(commands.Cog):
                     )
 
                     # Add field with details
-                    embed.add_field(name="Cryptocurrency not found", value="The id you provided is not recognized. Please check the id and try again.", inline=False)
+                    embed.add_field(name="API Error", value="An error occurred while fecthing the data from CoinGecko API. Please try again later.", inline=False)
 
                     # Send the message
                     await ctx.send(embed=embed)
