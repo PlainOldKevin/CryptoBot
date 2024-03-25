@@ -12,6 +12,7 @@ class PricesCog(commands.Cog):
     def __init__(self, bot):
         self.bot = bot 
         self.api_key = os.getenv('KEY')
+        self.gecko_key = os.getenv('GECKO_KEY')
 
     # Internal helper function for price display (to display prices below $0.01, instead of just `0.00`) to be used inside of other functions
     @staticmethod
@@ -159,41 +160,41 @@ class PricesCog(commands.Cog):
                     # Send the message
                     await ctx.send(embed=embed)
 
-    # Function to automatically fetch the price of any cryptocurrency using its id as the arg
+    # Function to automatically fetch the price of any cryptocurrency using its (CoinGecko) id as the arg
     @commands.command()
-    async def priceid(self, ctx, id: int):
+    async def priceid(self, ctx, id: str):
         # Fetch cryptocurrencies with url below
-        url = 'https://pro-api.coinmarketcap.com/v2/cryptocurrency/quotes/latest'
+        url = f'https://api.coingecko.com/api/v3/simple/price'
         
-        # Headers for CoinMarketCap API authentication
+        # Headers for CoinGecko API authentication
         headers = { 
-            'X-CMC_PRO_API_KEY': self.api_key,
-            'Accepts': 'application/json'
+            'x-cg-demo-api-key': self.gecko_key,
         }
 
         # Parameters for the search to query the url
         parameters = { 
-            'convert': 'USD',
-            'id': id,
+            'vs_currencies': 'usd',
+            'precision': '15',
+            'ids': id,
         }
 
-        # Asynchronously create a ClientSession (so the bot can make multiple HTTP calls and not get blocked from just one call) (really useful for big boy apps and bots)
+        # Asynchronously create a ClientSession (so the bot can make multiple HTTP calls and not get blocked from just one call)
         async with aiohttp.ClientSession() as session:
-            # The actual request
+            # Make the aynchronous, request
             async with session.get(url, params=parameters, headers=headers) as response:
-                # Request successsful,
+                # If request successsful,
                 if response.status == 200:
                     # Parse the response as JSON data
                     data = await response.json()
 
-                    # Check if id is in the response data (CMC API send 200s no matter what idk why)
-                    if str(id) in data['data']:
+                    # Check if id is in the response data
+                    if id in data:
 
                         # Find the price of the specified crypto and use the helper function that I spent 8 years on to format it
-                        price_value_string = self.format_crypto_price(data['data'][str(id)]['quote']['USD']['price'])
+                        price_value_string = self.format_crypto_price(data[id]['usd'])
 
                         # Check if the price is too small and create an embed
-                        if price_value_string == "0" or price_value_string is None:
+                        if price_value_string == "0":
 
                             # Make a pretty embed for the user's unfortunate news
                             embed = discord.Embed(
@@ -202,7 +203,7 @@ class PricesCog(commands.Cog):
                             )
 
                             # Add field with details
-                            embed.add_field(name="Price display error", value="The price of this coin does not exist, or is too small to display. For more accurate results, visit [coinmarketcap.com](https://coinmarketcap.com/).", inline=False)
+                            embed.add_field(name="Price display error", value="The price of this coin does not exist, or is too small to display. For more accurate results, visit [coingecko.com](https://www.coingecko.com/).", inline=False)
 
                             # Send the message
                             await ctx.send(embed=embed)
@@ -212,7 +213,7 @@ class PricesCog(commands.Cog):
 
                             # Create the embed to hold the message
                             embed = discord.Embed(
-                                title=f"{data['data'][str(id)]['name']}",
+                                title=f"{id}",
                                 color=discord.Color.dark_purple()
                             )
 
@@ -220,7 +221,7 @@ class PricesCog(commands.Cog):
                             embed.add_field(name="Price (USD):", value=price_value_string, inline=False)
 
                             # Set a professional footer to the message
-                            embed.set_footer(text="Data retrieved from CoinMarketCap")
+                            embed.set_footer(text="Powered by CoinGecko")
 
                             # Send the message
                             await ctx.send(embed=embed)

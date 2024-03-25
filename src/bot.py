@@ -11,7 +11,6 @@ load_dotenv()
 # Store important values from .env in variables
 BOT_TOKEN = os.getenv('TOKEN')
 TEST_TOKEN = os.getenv('TEST_TOKEN')
-API_KEY = os.getenv('KEY')
 
 # Add instance of discord client with intents
 intents = discord.Intents.default()
