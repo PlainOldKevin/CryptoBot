@@ -153,9 +153,11 @@ class PricesCog(commands.Cog):
                     # Make a pretty embed for the user's unfortunate news
                     embed = discord.Embed(
                         title="ERROR",
-                        description="An error occurred while fetching the data.",
                         color=0xC41E3A
                     )
+
+                    # Add field with details
+                    embed.add_field(name="Cryptocurrency not found", value="The symbol you provided is not recognized. Please check the symbol and try again.", inline=False)
 
                     # Send the message
                     await ctx.send(embed=embed)
