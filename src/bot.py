@@ -19,7 +19,7 @@ intents.message_content = True
 # Initialiaze bot
 bot = commands.Bot(command_prefix='/', intents=intents)
 
-# Run function when bot is initialized
+# Log function when bot is initialized
 @bot.event
 async def on_ready():
     print("We have logged in as {0.user}".format(bot))
@@ -32,7 +32,7 @@ async def hello(ctx):
 # Main function to handle bot's cog loading and running
 async def main():
     # List of all the cog files (to be loaded into the bot below)
-    cogs_list = ['cogs.prices_cog']
+    cogs_list = ['cogs.prices_cog', 'cogs.cache_cog']
 
     # Load the extensions into the bot
     for cog in cogs_list:
