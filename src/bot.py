@@ -4,6 +4,7 @@ from discord.ext import commands
 import os
 import asyncio
 from dotenv import load_dotenv
+from utils.data_manager import DataManager
 
 # Initialize load-env for token accessing
 load_dotenv()
@@ -12,38 +13,54 @@ load_dotenv()
 BOT_TOKEN = os.getenv('TOKEN')
 TEST_TOKEN = os.getenv('TEST_TOKEN')
 
-# Add instance of discord client with intents
-intents = discord.Intents.default()
-intents.message_content = True
+# Create class
+class CryptoBot(commands.Bot):
 
-# Initialiaze bot
-bot = commands.Bot(command_prefix='/', intents=intents)
+    # Init method (set important variables)
+    def __init__(self, command_prefix, intents):
+        super().__init__(command_prefix=command_prefix, intents=intents) # Call commands.bot init method for this bot
+        self.data_manager = DataManager()                              # Set up singular database class
 
-# Log function when bot is initialized
-@bot.event
-async def on_ready():
-    print("We have logged in as {0.user}".format(bot))
+    # Log function when bot is running
+    async def on_ready(self):
+        print("We have logged in as {0.user}".format(self))
 
-# Bot says hi to the user
-@bot.command()
-async def hello(ctx):
-    await ctx.send("hi")
+    # Bot says hi to the user
+    @commands.command()
+    async def hello(self, ctx):
+        await ctx.send("hi")
 
-# Main function to handle bot's cog loading and running
+    # Function to load cogs into the bot
+    async def load_cogs(self):
+        # List of all the cog files (to be loaded into the bot below)
+        cogs_list = ['cogs.prices_cog']
+
+        # Load the extensions into the bot
+        for cog in cogs_list:
+            try:
+                await self.load_extension(cog)
+                print(f"Loaded cog: {cog}")
+            except Exception as e:
+                print(f"Failed to load cog: {cog}")
+                print(f"[ERROR] {e}")
+    
+    # Function to start necessary processes and run the bot
+    async def run_bot(self):
+        await self.data_manager.populate_cache()
+        await self.load_cogs()
+        await self.start(TEST_TOKEN)
+
+# Main function to be ran
 async def main():
-    # List of all the cog files (to be loaded into the bot below)
-    cogs_list = ['cogs.prices_cog', 'cogs.cache_cog']
+    # Add instance of discord client with intents
+    intents = discord.Intents.default()
+    intents.message_content = True
 
-    # Load the extensions into the bot
-    for cog in cogs_list:
-        try:
-            await bot.load_extension(cog)
-            print(f"Loaded cog: {cog}")
-        except Exception as e:
-            print(f"Failed to load cog: {cog}")
-            print(f"[ERROR] {e}")
+    # Create CryptoBot instance 
+    bot = CryptoBot(command_prefix='/', intents=intents)
 
-    await bot.start(TEST_TOKEN)
+    # Start bot
+    await bot.run_bot()
 
 # Run the asynchronous main method (containing bot initialization)
 if __name__ == '__main__':
