@@ -48,7 +48,7 @@ class CryptoBot(commands.Bot):
     async def run_bot(self):
         await self.data_manager.populate_cache()
         await self.load_cogs()
-        await self.start(BOT_TOKEN)
+        await self.start(TEST_TOKEN)
 
 # Main function to be ran
 async def main():

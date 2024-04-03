@@ -133,10 +133,15 @@ class VolumeCog(commands.Cog):
 
                         # If volume can be displayed,
                         else:
-                            
+                            # Get the row of data in the df that holds the coin's info
+                            df_row = self.gecko_df[self.gecko_df['id'] == checked_name].iloc[0]
+                            # Get the name and id of the coin to display
+                            coin_name = df_row['name']
+                            coin_symbol = df_row['symbol']
+
                             # Create the embed to hold the message
                             embed = discord.Embed(
-                                title=f"{self.gecko_df.loc[self.gecko_df['id'] == checked_name, 'name'].iloc[0]}",
+                                title=f"{coin_name} ({coin_symbol})",
                                 color=discord.Color.dark_purple()
                             )
 
@@ -238,10 +243,15 @@ class VolumeCog(commands.Cog):
 
                         # If volume can be displayed,
                         else:
-                            
+                            # Get the row of data in the df that holds the coin's info
+                            df_row = self.gecko_df[self.gecko_df['id'] == checked_id].iloc[0]
+                            # Get the name and id of the coin to display
+                            coin_name = df_row['name']
+                            coin_symbol = df_row['symbol']
+
                             # Create the embed to hold the message
                             embed = discord.Embed(
-                                title=f"{self.gecko_df.loc[self.gecko_df['id'] == checked_id, 'name'].iloc[0]}",
+                                title=f"{coin_name} ({coin_symbol})",
                                 color=discord.Color.dark_purple()
                             )
 
@@ -281,6 +291,8 @@ class VolumeCog(commands.Cog):
 
                     # Send the message
                     await ctx.send(embed=embed)
+
+    # TODO: Function to get a coin's total volume
 
 # Setup function to load the cog into the bot
 async def setup(bot):
