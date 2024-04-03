@@ -10,7 +10,8 @@ class PricesCog(commands.Cog):
 
     # Init method (set important variables)
     def __init__(self, bot):
-        self.bot = bot 
+        self.bot = bot
+        self.data_manager = bot.data_manager
         self.api_key = os.getenv('KEY')
         self.gecko_key = os.getenv('GECKO_KEY')
 
@@ -70,41 +71,56 @@ class PricesCog(commands.Cog):
                 # And return
                 return formatted_number
 
-    # Function to automatically fetch the price of any cryptocurrency using its symbol as the arg
+    # Function to automatically fetch the price of any cryptocurrency using its name as the arg
     @commands.command()
-    async def price(self, ctx, symbol: str):
-        # Fetch cryptocurrencies with url below
-        url = 'https://pro-api.coinmarketcap.com/v1/cryptocurrency/quotes/latest'
+    async def price(self, ctx, name: str):
+        # Check the user-inputted name for validity
+        checked_name = self.data_manager.get_coin_name(name)
+
+        # If no name found, try to find other name
+        if checked_name == None:
+            checked_name = await self.data_manager.get_corrected_name(ctx, name)
+
+        # If none found after that, quit function
+        if checked_name == None:
+            return
+
+        # Fetch cryptocurrencies with markets endpoint (provides some better data than simple/price endpoint)
+        url = f'https://api.coingecko.com/api/v3/coins/markets'
         
-        # Headers for CoinMarketCap API authentication
+        # Headers for CoinGecko API authentication
         headers = { 
-            'X-CMC_PRO_API_KEY': self.api_key,
-            'Accepts': 'application/json'
+            'x-cg-demo-api-key': self.gecko_key,
         }
 
         # Parameters for the search to query the url
         parameters = { 
-            'convert': 'USD',
-            'symbol': symbol.upper(),
+            'vs_currency': 'usd',
+            'ids': checked_name,
+            'precision': '15',
         }
 
-        # Asynchronously create a ClientSession (so the bot can make multiple HTTP calls and not get blocked from just one call) (really useful for big boy apps and bots)
+        # Asynchronously create a ClientSession (so the bot can make multiple HTTP calls and not get blocked from just one call)
         async with aiohttp.ClientSession() as session:
-            # The actual request
+            # Make the aynchronous request to the api
             async with session.get(url, params=parameters, headers=headers) as response:
-                # Request successsful,
+                # If request successsful,
                 if response.status == 200:
                     # Parse the response as JSON data
                     data = await response.json()
 
-                    # Check if symbol is in the response data (CMC API send 200s no matter what idk why)
-                    if symbol.upper() in data['data']:
+                    # Check if our parameter is in the response data,
+                    if data:
+
+                        # Reassign the JSON data to a variable for easier token access (because we GET a list of one dict)
+                        crypto_data = data[0]
 
                         # Find the price of the specified crypto and use the helper function that I spent 8 years on to format it
-                        price_value_string = self.format_crypto_price(data['data'][symbol.upper()]['quote']['USD']['price'])
+                        price_value_string = self.format_crypto_price(crypto_data['current_price'])
 
-                        # Check if the price is too small and create an embed
+                        # Check if the price is too small (or null) and create an embed
                         if price_value_string == "0":
+
                             # Make a pretty embed for the user's unfortunate news
                             embed = discord.Embed(
                                 title="ERROR",
@@ -112,16 +128,16 @@ class PricesCog(commands.Cog):
                             )
 
                             # Add field with details
-                            embed.add_field(name="Price display error", value="The price of this coin is too small to display. For more accurate results, visit [coinmarketcap.com](https://coinmarketcap.com/)", inline=False)
+                            embed.add_field(name="Price display error", value="The price of this coin does not exist, or is too small to display. For more accurate results, visit [coingecko.com](https://www.coingecko.com/).", inline=False)
 
                             # Send the message
                             await ctx.send(embed=embed)
-
                         # If price can be displayed,
                         else:
+
                             # Create the embed to hold the message
                             embed = discord.Embed(
-                                title=f"{data['data'][symbol.upper()]['name']}",
+                                title=f"{crypto_data['name']}",
                                 color=discord.Color.dark_purple()
                             )
 
@@ -129,21 +145,21 @@ class PricesCog(commands.Cog):
                             embed.add_field(name="Price (USD):", value=price_value_string, inline=False)
 
                             # Set a professional footer to the message
-                            embed.set_footer(text="Data retrieved from CoinMarketCap")
+                            embed.set_footer(text="Powered by CoinGecko")
 
                             # Send the message
                             await ctx.send(embed=embed)
 
-                    # If symbol not in response data (user messed up)
+                    # If id not in response data (user messed up)
                     else:
                         # Make a pretty embed for the user's unfortunate news
                         embed = discord.Embed(
                             title="ERROR",
                             color=0xC41E3A
                         )
-
+                        
                         # Add field with details
-                        embed.add_field(name="Cryptocurrency not found", value="The symbol you provided is not recognized. Please check the symbol and try again.", inline=False)
+                        embed.add_field(name="Cryptocurrency not found", value="The id you provided is not recognized. Please check the id and try again.", inline=False)
 
                         # Send the message
                         await ctx.send(embed=embed)
@@ -157,7 +173,7 @@ class PricesCog(commands.Cog):
                     )
 
                     # Add field with details
-                    embed.add_field(name="Cryptocurrency not found", value="The symbol you provided is not recognized. Please check the symbol and try again.", inline=False)
+                    embed.add_field(name="API Error", value="An error occurred while fecthing the data from CoinGecko API. Please try again later.", inline=False)
 
                     # Send the message
                     await ctx.send(embed=embed)
@@ -165,6 +181,17 @@ class PricesCog(commands.Cog):
     # Function to automatically fetch the price of any cryptocurrency using its (CoinGecko) id as the arg
     @commands.command()
     async def priceid(self, ctx, id: str):
+        # Check the user-inputted id for validity
+        checked_id = self.data_manager.get_coin_id(id)
+
+        # If no id found, try to find other ids
+        if checked_id == None:
+            checked_id = await self.data_manager.get_corrected_id(ctx, id)
+
+        # If none found after that, quit function
+        if checked_id == None:
+            return
+        
         # Fetch cryptocurrencies with markets endpoint (provides some better data than simple/price endpoint)
         url = f'https://api.coingecko.com/api/v3/coins/markets'
         
@@ -176,7 +203,7 @@ class PricesCog(commands.Cog):
         # Parameters for the search to query the url
         parameters = { 
             'vs_currency': 'usd',
-            'ids': id,
+            'ids': checked_id,
             'precision': '15',
         }
 

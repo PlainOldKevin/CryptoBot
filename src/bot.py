@@ -19,7 +19,7 @@ class CryptoBot(commands.Bot):
     # Init method (set important variables)
     def __init__(self, command_prefix, intents):
         super().__init__(command_prefix=command_prefix, intents=intents) # Call commands.bot init method for this bot
-        self.data_manager = DataManager()                              # Set up singular database class
+        self.data_manager = DataManager()                                # Set up singular database class
 
     # Log function when bot is running
     async def on_ready(self):
