@@ -33,7 +33,7 @@ class CryptoBot(commands.Bot):
     # Function to load cogs into the bot
     async def load_cogs(self):
         # List of all the cog files (to be loaded into the bot below)
-        cogs_list = ['cogs.prices_cog']
+        cogs_list = ['cogs.prices_cog', 'cogs.volume_cog']
 
         # Load the extensions into the bot
         for cog in cogs_list:
@@ -48,7 +48,7 @@ class CryptoBot(commands.Bot):
     async def run_bot(self):
         await self.data_manager.populate_cache()
         await self.load_cogs()
-        await self.start(BOT_TOKEN)
+        await self.start(TEST_TOKEN)
 
 # Main function to be ran
 async def main():

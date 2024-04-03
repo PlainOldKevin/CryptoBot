@@ -86,7 +86,7 @@ class PricesCog(commands.Cog):
             return
 
         # Fetch cryptocurrencies with markets endpoint (provides some better data than simple/price endpoint)
-        url = f'https://api.coingecko.com/api/v3/coins/markets'
+        url = 'https://api.coingecko.com/api/v3/coins/markets'
         
         # Headers for CoinGecko API authentication
         headers = { 
@@ -159,7 +159,7 @@ class PricesCog(commands.Cog):
                         )
                         
                         # Add field with details
-                        embed.add_field(name="Cryptocurrency not found", value="The id you provided is not recognized. Please check the id and try again.", inline=False)
+                        embed.add_field(name="Cryptocurrency not found", value="The name you provided is not recognized. Please check the name and try again.", inline=False)
 
                         # Send the message
                         await ctx.send(embed=embed)
@@ -193,7 +193,7 @@ class PricesCog(commands.Cog):
             return
         
         # Fetch cryptocurrencies with markets endpoint (provides some better data than simple/price endpoint)
-        url = f'https://api.coingecko.com/api/v3/coins/markets'
+        url = 'https://api.coingecko.com/api/v3/coins/markets'
         
         # Headers for CoinGecko API authentication
         headers = { 
