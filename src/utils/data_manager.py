@@ -91,7 +91,6 @@ class DataManager:
         # Handle the user's response
         try: 
             msg = await ctx.bot.wait_for('message', check=check, timeout=30)                      # Check the message
-            print(type(msg))
             # If the message is 'q',
             if msg.content.lower() == 'q':        
                 # Create an embed for user bad input
