@@ -2,6 +2,7 @@ aiohttp==3.9.3
 discord.py==2.3.2
 fuzzywuzzy==0.18.0
 Levenshtein==0.25.0
+pandas==2.2.1
 python-dotenv==1.0.1
 python-Levenshtein==0.25.0
 rapidfuzz==3.7.0
