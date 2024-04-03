@@ -111,7 +111,7 @@ class VolumeCog(commands.Cog):
                     crypto_data = await response.json()
                     
                     # Check if our parameter is in the response data,
-                    if crypto_data:
+                    if crypto_data and checked_name in crypto_data and 'usd_24h_vol' in crypto_data[checked_name] and crypto_data[checked_name]['usd_24h_vol'] is not None:
 
                         # Find the volume of the specified crypto and use the helper function that I spent 8 years on to format it
                         volume = self.format_crypto_price(crypto_data[checked_name]['usd_24h_vol'])
@@ -158,7 +158,7 @@ class VolumeCog(commands.Cog):
                         )
                         
                         # Add field with details
-                        embed.add_field(name="Cryptocurrency not found", value="The name you provided is not recognized. Please check the name and try again.", inline=False)
+                        embed.add_field(name="Cryptocurrency Data Not Found", value="The data for the provided cryptocurrency name is not available. For more information, visit [coingecko.com](https://www.coingecko.com/).", inline=False)
 
                         # Send the message
                         await ctx.send(embed=embed)
@@ -172,7 +172,112 @@ class VolumeCog(commands.Cog):
                     )
 
                     # Add field with details
-                    embed.add_field(name="API Error", value="An error occurred while fecthing the data from CoinGecko API. Please try again later.", inline=False)
+                    embed.add_field(name="API Error", value="An error occurred while fetching the data from CoinGecko API. Please try again later.", inline=False)
+
+                    # Send the message
+                    await ctx.send(embed=embed)
+
+    # Function to get 24-hour volume of a coin by id
+    @commands.command()
+    async def vol24id(self, ctx, id:str):
+        # Check the user-inputted id for validity
+        checked_id = self.data_manager.get_coin_id(id)
+
+        # If no id found, try to find other id
+        if checked_id == None:
+            checked_id = await self.data_manager.get_corrected_id(ctx, id)
+
+        # If none found after that, quit function
+        if checked_id == None:
+            return
+        
+        # Fetch cryptocurrencies with simple/price endpoint
+        url = 'https://api.coingecko.com/api/v3/simple/price'
+        
+        # Headers for CoinGecko API authentication
+        headers = { 
+            'x-cg-demo-api-key': self.gecko_key,
+        }
+        
+        # Parameters for the search to query the url
+        parameters = { 
+            'vs_currencies': 'usd',
+            'ids': checked_id,
+            'include_24hr_vol' : 'true',
+        }
+        
+        # Asynchronously create a ClientSession (so the bot can make multiple HTTP calls and not get blocked from just one call)
+        async with aiohttp.ClientSession() as session:
+            # Make the aynchronous request to the api
+            async with session.get(url, params=parameters, headers=headers) as response:
+                # If request successsful,
+                if response.status == 200:
+                    # Parse the response as JSON data
+                    crypto_data = await response.json()
+                    
+                    # Check if our parameter is in the response data,
+                    if crypto_data and checked_id in crypto_data and 'usd_24h_vol' in crypto_data[checked_id] and crypto_data[checked_id]['usd_24h_vol'] is not None:
+
+                        # Find the volume of the specified crypto and use the helper function that I spent 8 years on to format it
+                        volume = self.format_crypto_price(crypto_data[checked_id]['usd_24h_vol'])
+
+                        # Check if the volume is too small (or null) and create an embed
+                        if volume == "0":
+
+                            # Make a pretty embed for the user's unfortunate news
+                            embed = discord.Embed(
+                                title="ERROR",
+                                color=0xC41E3A
+                            )
+
+                            # Add field with details
+                            embed.add_field(name="Volume display error", value="The volume of this coin does not exist, or is too small to display. For more accurate results, visit [coingecko.com](https://www.coingecko.com/).", inline=False)
+
+                            # Send the message
+                            await ctx.send(embed=embed)
+
+                        # If volume can be displayed,
+                        else:
+                            
+                            # Create the embed to hold the message
+                            embed = discord.Embed(
+                                title=f"{self.gecko_df.loc[self.gecko_df['id'] == checked_id, 'name'].iloc[0]}",
+                                color=discord.Color.dark_purple()
+                            )
+
+                            # Add it to the embed
+                            embed.add_field(name="24h Volume (USD):", value=volume, inline=False)
+
+                            # Set a professional footer to the message
+                            embed.set_footer(text="Powered by CoinGecko")
+
+                            # Send the message
+                            await ctx.send(embed=embed)
+
+                    # If id not in response data (user messed up)
+                    else:
+                        # Make a pretty embed for the user's unfortunate news
+                        embed = discord.Embed(
+                            title="ERROR",
+                            color=0xC41E3A
+                        )
+                        
+                        # Add field with details
+                        embed.add_field(name="Cryptocurrency Data Not Found", value="The data for the provided cryptocurrency id is not available. For more information, visit [coingecko.com](https://www.coingecko.com/).", inline=False)
+
+                        # Send the message
+                        await ctx.send(embed=embed)
+                
+                # If the request was not successful,
+                else:
+                    # Make a pretty embed for the user's unfortunate news
+                    embed = discord.Embed(
+                        title="ERROR",
+                        color=0xC41E3A
+                    )
+
+                    # Add field with details
+                    embed.add_field(name="API Error", value="An error occurred while fetching the data from CoinGecko API. Please try again later.", inline=False)
 
                     # Send the message
                     await ctx.send(embed=embed)
